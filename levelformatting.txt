@@ -1,0 +1,35 @@
+rows(2 digits),columns(2 digits)
+sourcepipe-x(2 digits),sourcepipe-y(2 digits)
+id,id,id...(for amount of rows)
+id,id,id
+id,id,id
+........(for amount of columns)
+
+---------
+id list:
+
+Dead ends:
+1 - dead end opened up
+2 - dead end opened down
+3 - dead end opened left
+4 - dead end opened right
+
+Turns:
+5 - up-left turn
+6 - down-right turn
+7 - down-left turn
+8 - up-right turn
+
+Straights:
+9 - vertical straight
+A - horizontal
+
+Three ways:
+B - horizontal+down
+C - horizontal+up
+D - vertical+right
+E - vertical+left
+
+Other:
+F - cross
+0 - pipe with no openings (not for use)
