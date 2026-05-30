@@ -218,6 +218,13 @@ while running:
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
+                if scene == "level":
+                    visited = filledpipes(atlas, sourcex, sourcey)
+                    if checkwin(atlas, visited):
+                        save_win(current_level_name)
+                    else:
+                        print("Can't save! You haven't connected all the pipes yet.")
+
                 scene = "menu"
             elif event.key == pygame.K_x:
                 level = input("Enter level name: ")
