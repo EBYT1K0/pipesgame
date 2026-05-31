@@ -203,6 +203,22 @@ while running:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
                  shuffle(atlas)
+            if event.key == pygame.K_t:
+                if WHITE == (255, 255, 255):
+                    WHITE = (80, 80, 80)
+                    BLACK = (0, 0, 0)
+                    BLUE = (0, 195, 255)
+                else:
+                    WHITE = (255, 255, 255)
+                    BLACK = (0, 0, 0)
+                    BLUE = (0, 195, 255)
+            if event.key == pygame.K_n:
+                level_name = userinput[2:]
+                rows = int(input("Enter number of rows: "))
+                cols = int(input("Enter number of columns: "))
+                sourcex = int(input("Enter source x coordinate (0-indexed): "))
+                sourcey = int(input("Enter source y coordinate (0-indexed): "))
+                atlas = [[[False, False, False, False] for j in range(cols)] for i in range(rows)]
         x, y, click_type = selection(screen, 0, 0, WIDTH, HEIGHT, rows, cols)
         if x is not None and y is not None:
             if click_type == "left":
