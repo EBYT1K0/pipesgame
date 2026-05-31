@@ -206,8 +206,8 @@ while running:
             if event.key == pygame.K_t:
                 if WHITE == (255, 255, 255):
                     WHITE = (80, 80, 80)
-                    BLACK = (0, 0, 0)
-                    BLUE = (0, 195, 255)
+                    BLACK = (200, 200, 200)
+                    BLUE = (0, 58, 112)
                 else:
                     WHITE = (255, 255, 255)
                     BLACK = (0, 0, 0)
