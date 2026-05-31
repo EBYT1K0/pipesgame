@@ -22,6 +22,7 @@ Controls
 - Use the console to create a level or open an existing one
 - Left Click on a cell to rotate a pipe 90° clockwise
 - Right Click on a cell to change the shape of the pipe
+- Press 'R' to randomly rotate all pipes
 - Press 'S' and continue in console to save your level
 
 Opening your levels in game
