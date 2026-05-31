@@ -1,5 +1,6 @@
 import pygame
 import pathlib
+import random
 
 # Colors
 WHITE = (255, 255, 255)
@@ -9,29 +10,37 @@ GREEN = (0, 200, 100)  # Color used to show a level is saved/completed!
 
 WIDTH, HEIGHT = 900, 900
 
+icon_path = pathlib.Path(__file__).parent / "assets" / f"icon4.png"
+pygame.display.set_icon(pygame.image.load(icon_path))
 # ----------------- SAVE & LOAD SYSTEM -----------------
-def save_win(level_name):
+def save_win(level_name,elapsed_time):
     """Saves a level win to saves.txt if it isn't already saved."""
     save_path = pathlib.Path(__file__).parent / "saves.txt"
     
     # Read existing wins to prevent duplicating entries
     existing_wins = load_wins()
     if level_name in existing_wins:
-        print(f"{level_name} is already saved!")
+        print(f"{level_name} is already saved.")
         return
         
     with open(save_path, "a") as file:
-        file.write(f"{level_name}\n")
-    print(f"Saved win for {level_name}!")
+        file.write(f"{level_name},{elapsed_time}\n")
+    print(f"Saved win for {level_name}")
 
 def load_wins():
-    """Reads saves.txt and returns a set of completed level names."""
+    """Reads saves.txt and returns a list of completed level names."""
     save_path = pathlib.Path(__file__).parent / "saves.txt"
     if not save_path.exists():
-        return set()
+        return list
     
     with open(save_path, "r") as file:
-        return set(line.strip() for line in file if line.strip())
+        lines = [line.strip() for line in file if line.strip()]
+    wins = []
+    for line in lines:
+        parts = line.split(",")
+        if len(parts) >= 2:
+            wins.append(parts[0])  # Only return the level name, not the time
+    return wins
 # ------------------------------------------------------
 
 def load_level(level_name):
@@ -120,9 +129,13 @@ def levelgrid(screen, x, y, w, h, rows, cols, saved_wins):
             cell_rect = pygame.Rect(x + j * cell_width, y + i * cell_height, cell_width, cell_height)
             
             # Check if this level number is in our saved_wins set
+            bg_color = WHITE
             level_name = f"level{k}"
-            bg_color = GREEN if level_name in saved_wins else WHITE
-            
+            if level_name in saved_wins:
+                bg_color = GREEN
+            else:
+                bg_color = WHITE
+
             pygame.draw.rect(screen, bg_color, cell_rect)
             pygame.draw.rect(screen, BLACK, cell_rect, 1)
             
@@ -179,7 +192,7 @@ def filledpipes(atlas, sourcex, sourcey):
                 flow(x, y-1)
             if atlas[x][y][3] and y < c_max-1 and atlas[x][y+1][2]: 
                 flow(x, y+1)
-    flow(sourcex, sourcey)
+    flow(sourcey, sourcex)
     return visited
 
 def checkwin(atlas, visited):
@@ -188,6 +201,50 @@ def checkwin(atlas, visited):
             if atlas[i][j] != [False, False, False, False] and [i, j] not in visited:
                 return False
     return True
+
+def timercheckbox(screen, x, y, size, is_checked):
+    pygame.draw.rect(screen, BLACK, (x, y, size, size), 4)
+    font = pygame.font.SysFont(None, 50)
+    text_surf = font.render("Show Timer (BETA)", True, BLACK)
+    screen.blit(text_surf, (x + size + 10, y + size//2 - text_surf.get_height()//2))
+    mouse_pos = pygame.mouse.get_pos()
+    if pygame.Rect(x, y, size, size).collidepoint(mouse_pos):
+         pygame.draw.rect(screen, BLACK, (x, y, size, size), 2)
+         if pygame.mouse.get_pressed()[0]:  # Left click
+             is_checked = not is_checked
+             pygame.time.delay(100)
+    if is_checked:
+        pygame.draw.line(screen, GREEN, (x + 5, y + size//2), (x + size//2, y + size - 5), 8)
+        pygame.draw.line(screen, GREEN, (x + size//2, y + size - 5), (x + size - 5, y + 5), 8)
+    return is_checked
+
+def timer(screen, x, y, elapsed_time, show_timer):
+    if not show_timer:
+        return elapsed_time
+    font = pygame.font.SysFont(None, 100)
+    total_seconds = elapsed_time // 1000
+    minutes = total_seconds // 60
+    seconds = total_seconds % 60
+    milliseconds = elapsed_time % 1000
+    time_string = f"{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
+    text_surf = font.render(time_string, True, BLACK)
+    screen.blit(text_surf, (x, y))
+    return elapsed_time
+
+def pagebutton(screen, x, y, w, h, page, last_page):
+    if page < last_page:
+         text = ">"
+    font = pygame.font.SysFont(None, 50)
+    button_rect = pygame.Rect(x, y, w, h)
+    pygame.draw.rect(screen, BLACK, button_rect, 4)
+    text_surf = font.render(text, True, BLACK)
+    screen.blit(text_surf, (x + w//2 - text_surf.get_width()//2, y + h//2 - text_surf.get_height()//2))
+    mouse_pos = pygame.mouse.get_pos()
+    if button_rect.collidepoint(mouse_pos):
+        pygame.draw.rect(screen, BLACK, button_rect, 2)
+        if pygame.mouse.get_pressed()[0]:  # Left click
+            return True
+    return False
 
 # Initialize Game
 pygame.init()
@@ -203,7 +260,12 @@ res = load_level(current_level_name)
 if res:
     rows, cols, sourcex, sourcey, atlas = res
 
+show_timer = False
+elapsed_time = 0
+start_ticks = 0
 scene = "menu"
+page = 0
+last_page = 1
 running = True
 
 while running:
@@ -221,9 +283,8 @@ while running:
                 if scene == "level":
                     visited = filledpipes(atlas, sourcex, sourcey)
                     if checkwin(atlas, visited):
-                        save_win(current_level_name)
-                    else:
-                        print("Can't save! You haven't connected all the pipes yet.")
+                        save_win(current_level_name, elapsed_time)
+                        elapsed_time = 0
 
                 scene = "menu"
             elif event.key == pygame.K_x:
@@ -233,14 +294,19 @@ while running:
                     current_level_name = level
                     rows, cols, sourcex, sourcey, atlas = res
                     scene = "level"
-            
-            elif event.key == pygame.K_s:
-                if scene == "level":
-                    visited = filledpipes(atlas, sourcex, sourcey)
-                    if checkwin(atlas, visited):
-                        save_win(current_level_name)
+                    pygame.display.quit()
+                    if rows > cols:
+                        HEIGHT = 900
+                        WIDTH = int(900 * cols / rows)
+                    elif cols > rows:
+                        WIDTH = 900
+                        HEIGHT = int(900 * rows / cols)
                     else:
-                        print("Can't save! You haven't connected all the pipes yet.")
+                        WIDTH, HEIGHT = 900, 900
+                    icon_path_cl = pathlib.Path(__file__).parent / "assets" / "iconlm.png"
+                    pygame.display.set_caption("Pipes - Custom Level")
+                    pygame.display.set_icon(pygame.image.load(icon_path_cl))
+                    screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             click_detected = True
@@ -254,16 +320,24 @@ while running:
                 
         visited = filledpipes(atlas, sourcex, sourcey)
         draw_pipe(screen, WIDTH // cols, HEIGHT // rows, atlas, visited)
+        win = checkwin(atlas, visited)
         
-        if checkwin(atlas, visited):
+        if win:
             font = pygame.font.SysFont(None, 60)
-            text = font.render("You win! Press 'S' to Save", True, BLACK)
+            text = font.render("You win!", True, BLACK)
             screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2))
+            elapsed_time = 0
+
+        else:  # Get current time in milliseconds
+            elapsed_time = pygame.time.get_ticks() - start_ticks  # Update elapsed_time with the time since last tick
+            timer(screen, 25, 25, elapsed_time, show_timer)
 
     elif scene == "menu":
         font = pygame.font.SysFont(None, 100)
         text = font.render("Choose level", True, BLACK)
         screen.blit(text, (WIDTH // 2 - text.get_width() // 2, 25))
+        show_timer = timercheckbox(screen, 25, HEIGHT - 75, 50, show_timer)
+        pagebutton(screen, WIDTH - 75, HEIGHT - 75, 50, 50, page, last_page)
         
         # Grid now draws green rectangles if level was previously saved
         levelgrid(screen, 100, 100, WIDTH-200, HEIGHT-200, 4, 4, saved_wins)
@@ -278,7 +352,8 @@ while running:
                 if res:
                     current_level_name = level_str
                     rows, cols, sourcex, sourcey, atlas = res
-                    scene = "level"
+                    scene = "level"  # Reset timer when selecting a new level
+                    start_ticks = pygame.time.get_ticks()  # Reset start time
 
     pygame.display.update()
     clock.tick(60)
