@@ -143,7 +143,7 @@ def draw_pipe(screen, w, h, atlas, visited):
         y2 += 1
         y += h
 
-def levelgrid(screen, x, y, w, h, rows, cols, saved_wins, show_timer):
+def levelgrid(screen, x, y, w, h, rows, cols, saved_wins, show_timer, page):
     """Draws selection grid. Turns cells GREEN if that level name has been beaten."""
     font = pygame.font.SysFont(None, 100)
     # A smaller font helps the timer string fit inside the grid cell cleanly
@@ -151,7 +151,7 @@ def levelgrid(screen, x, y, w, h, rows, cols, saved_wins, show_timer):
     
     cell_width = w // cols
     cell_height = h // rows
-    k = 1
+    k = 1 + (page*16)
     
     for i in range(rows):
         for j in range(cols):
@@ -295,19 +295,35 @@ def timer(screen, x, y, elapsed_time, show_timer):
     return time_string
 
 def pagebutton(screen, x, y, w, h, page, last_page):
+    text = ">"
+    text2 = "<"
+    button = False
+    button2 = False
     if page < last_page:
-         text = ">"
+        button = True
+    if page > 0:
+        button2 = True
     font = pygame.font.SysFont(None, 50)
     button_rect = pygame.Rect(x, y, w, h)
-    pygame.draw.rect(screen, TEXTCOLOR, button_rect, 4)
-    text_surf = font.render(text, True, TEXTCOLOR)
-    screen.blit(text_surf, (x + w//2 - text_surf.get_width()//2, y + h//2 - text_surf.get_height()//2))
-    mouse_pos = pygame.mouse.get_pos()
-    if button_rect.collidepoint(mouse_pos):
+    button2_rect = pygame.Rect(x-50, y, w, h)
+    if button:
         pygame.draw.rect(screen, TEXTCOLOR, button_rect, 2)
+        text_surf = font.render(text, True, TEXTCOLOR)
+        screen.blit(text_surf, (x + w//2 - text_surf.get_width()//2, y + h//2 - text_surf.get_height()//2))
+    if button2:
+        pygame.draw.rect(screen, TEXTCOLOR, button2_rect, 2)
+        text2_surf = font.render(text2, True, TEXTCOLOR)
+        screen.blit(text2_surf, (x + w//2 - text2_surf.get_width()//2 - 50, y + h//2 - text2_surf.get_height()//2))
+    mouse_pos = pygame.mouse.get_pos()
+    if button_rect.collidepoint(mouse_pos) and button:
+        pygame.draw.rect(screen, BLUE, button_rect, 4)
         if pygame.mouse.get_pressed()[0]:  # Left click
-            return True
-    return False
+            return page+1
+    elif button2_rect.collidepoint(mouse_pos) and button2:
+        pygame.draw.rect(screen, BLUE, button2_rect, 4)
+        if pygame.mouse.get_pressed()[0]:
+            return page-1
+    return page
 
 # Initialize Game
 pygame.init()
@@ -327,6 +343,7 @@ show_timer = True
 dark_theme = True
 record = 0
 start_ticks = 0
+time_string = "00:00.000"
 scene = "menu"
 page = 0
 last_page = 1
@@ -391,6 +408,8 @@ while running:
             text = font.render("You win!", True, TEXTCOLOR)
             screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height()*3))
             if show_timer:
+                if time_string == None:
+                    time_string = "00:00.000"
                 text = font.render(time_string, True, TEXTCOLOR)
                 screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height()))
             #elapsed_time = 0
@@ -416,16 +435,16 @@ while running:
             BLUE = (0, 195, 255)
             GREEN = (0, 200, 100)
 
-        pagebutton(screen, WIDTH - 75, HEIGHT - 75, 50, 50, page, last_page)
+        page = pagebutton(screen, WIDTH - 75, HEIGHT - 75, 50, 50, page, last_page)
         
         # Grid now draws green rectangles if level was previously saved
-        levelgrid(screen, 100, 100, WIDTH-200, HEIGHT-200, 4, 4, levelandtime, show_timer)
+        levelgrid(screen, 100, 100, WIDTH-200, HEIGHT-200, 4, 4, levelandtime, show_timer, page)
         i, j, cell_rect = get_hovered_cell(100, 100, WIDTH-200, HEIGHT-200, 4, 4)
         
         if i is not None and j is not None:
             pygame.draw.rect(screen, BLUE, cell_rect, 4)
             if click_detected:
-                level_num = i * 4 + j + 1
+                level_num = i * 4 + j + 1 + page*16
                 level_str = f"level{level_num}"
                 res = load_level(level_str)
                 if res:
