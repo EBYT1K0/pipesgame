@@ -167,12 +167,24 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 195, 255)
 
-WIDTH, HEIGHT = 900,900
+if rows > cols:
+    HEIGHT = 900
+    WIDTH = int(900 * cols / rows)
+elif cols > rows:
+    WIDTH = 900
+    HEIGHT = int(900 * rows / cols)
+else:
+    WIDTH, HEIGHT = 900, 900
 
 pygame.init()
-
+icon_path = pathlib.Path(__file__).parent / "assets" / "iconlm.png"
+if userinput[0:2] == "/n":
+    pygame.display.set_caption("Pipes LM - New Level")
+else:
+    pygame.display.set_caption("Pipes LM - " + userinput)
+    
+pygame.display.set_icon(pygame.image.load(icon_path))
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Pipes Level Maker")
 running = True
 while running:
     screen.fill(WHITE)
@@ -238,4 +250,5 @@ while running:
                                 row.append("F")
                         file.write(",".join(row) + "\n")
                     print(f"Level saved to {file_path}")
+                    pygame.display.set_caption("Pipes LM - " + level_name[:-4])
                 
