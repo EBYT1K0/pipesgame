@@ -12,34 +12,61 @@ WIDTH, HEIGHT = 900, 900
 icon_path = pathlib.Path(__file__).parent / "assets" / f"icon4.png"
 pygame.display.set_icon(pygame.image.load(icon_path))
 # ----------------- SAVE & LOAD SYSTEM -----------------
-def save_win(level_name,elapsed_time):
-    """Saves a level win to saves.txt if it isn't already saved."""
+def save_win(level_name, elapsed_time):
+    """Saves a level win to saves.txt, updating the time ONLY if it is faster."""
     save_path = pathlib.Path(__file__).parent / "saves.txt"
     
-    # Read existing wins to prevent duplicating entries
-    existing_wins = load_wins()
-    if level_name in existing_wins:
-        print(f"{level_name} is already saved.")
-        return
+    # 1. Read all existing records into a dictionary {level_name: elapsed_time}
+    records = {}
+    if save_path.exists():
+        with open(save_path, "r") as file:
+            for line in file:
+                line = line.strip()
+                if line and "," in line:
+                    name, t_str = line.split(",", 1)
+                    try:
+                        records[name] = int(t_str)
+                    except ValueError:
+                        continue
+
+    # 2. Check if we should update: 
+    # If the level hasn't been beaten yet, OR if the new time is lower than the old time
+    if level_name not in records or elapsed_time < records[level_name]:
+        records[level_name] = elapsed_time
+        print(f"New Personal Best for {level_name}! Time: {elapsed_time}ms")
         
-    with open(save_path, "a") as file:
-        file.write(f"{level_name},{elapsed_time}\n")
-    print(f"Saved win for {level_name}")
+        # 3. Save everything back to the file cleanly
+        with open(save_path, "w") as file:
+            for name, t in records.items():
+                file.write(f"{name},{t}\n")
+    else:
+        print(f"Level {level_name} completed, but your time ({elapsed_time}ms) wasn't faster than your best ({records[level_name]}ms).")
+
 
 def load_wins():
-    """Reads saves.txt and returns a list of completed level names."""
+    """Reads saves.txt and returns a list of completed level names and their times."""
     save_path = pathlib.Path(__file__).parent / "saves.txt"
     if not save_path.exists():
-        return list
+        return [], []  # Crucial fix: returns empty lists instead of the type 'list'
+    
+    wins = []
+    time_data = []
     
     with open(save_path, "r") as file:
-        lines = [line.strip() for line in file if line.strip()]
-    wins = []
-    for line in lines:
-        parts = line.split(",")
-        if len(parts) >= 2:
-            wins.append(parts[0])  # Only return the level name, not the time
-    return wins
+        for line in file:
+            line = line.strip()
+            if line and "," in line:
+                parts = line.split(",", 1)
+                try:
+                    level_name = parts[0]
+                    elapsed = int(parts[1])
+                    
+                    wins.append(level_name)
+                    time_data.append([level_name, elapsed])
+                except ValueError:
+                    continue  # Skip malformed lines safely
+                    
+    return wins, time_data
 # ------------------------------------------------------
 
 def load_level(level_name):
@@ -272,7 +299,7 @@ while running:
     click_detected = False
     
    
-    saved_wins = load_wins()
+    saved_wins, levelandtime = load_wins()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
