@@ -1,6 +1,5 @@
 import pygame
 import pathlib
-import random
 
 # Colors
 WHITE = (255, 255, 255)
