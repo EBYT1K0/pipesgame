@@ -1,5 +1,6 @@
 import pygame
 import pathlib
+import random
 
 def draw_pipe(screen, w, h, atlas, sourcex, sourcey): # checks each value in atlas and draws the pipes accordingly
     x = 0
@@ -95,6 +96,13 @@ def change_pipe(atlas, x, y):
     elif atlas[x][y].count(True) == 4:
         atlas[x][y] = [False, False, False, False]
 
+def shuffle(atlas):
+    for i in range(len(atlas)):
+        for j in range(len(atlas[0])):
+            for _ in range(random.randint(0, 3)):
+                atlas[i][j] = rotation(atlas, i, j)
+
+
 userinput = input('Enter "/n" to create a new level, or enter "levelname" to load an existing level: ')
 if userinput[0:2] != "/n":
     lines = []
@@ -102,7 +110,7 @@ if userinput[0:2] != "/n":
     level = userinput
     level += ".txt"
 
-    file_path = pathlib.Path(__file__).parent / "levels" / level
+    file_path = pathlib.Path(__file__).parent.parent / "levels" / level
     with open(file_path, "r") as file:
         for line in file:
             lines.append(line.strip())
@@ -177,7 +185,7 @@ else:
     WIDTH, HEIGHT = 900, 900
 
 pygame.init()
-icon_path = pathlib.Path(__file__).parent / "assets" / "iconlm.png"
+icon_path = pathlib.Path(__file__).parent.parent / "assets" / "iconlm.png"
 if userinput[0:2] == "/n":
     pygame.display.set_caption("Pipes LM - New Level")
 else:
@@ -192,6 +200,9 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_r:
+                 shuffle(atlas)
         x, y, click_type = selection(screen, 0, 0, WIDTH, HEIGHT, rows, cols)
         if x is not None and y is not None:
             if click_type == "left":
@@ -209,7 +220,7 @@ while running:
             if event.key == pygame.K_s:
                 level_name = input("Enter level name to save as: ")
                 level_name += ".txt"
-                file_path = pathlib.Path(__file__).parent / "levels" / level_name
+                file_path = pathlib.Path(__file__).parent.parent / "levels" / level_name
                 with open(file_path, "w") as file:
                     file.write(f"{rows:02d},{cols:02d}\n")
                     file.write(f"{sourcex:02d},{sourcey:02d}\n")
