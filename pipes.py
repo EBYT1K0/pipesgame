@@ -2,9 +2,9 @@ import pygame
 import pathlib
 
 # Colors
-WHITE = (255, 255, 255)
+BGCOLOR = (255, 255, 255)
 BLUE = (0, 195, 255)
-BLACK = (0, 0, 0)
+TEXTCOLOR = (0, 0, 0)
 GREEN = (0, 200, 100)  # Color used to show a level is saved/completed!
 
 WIDTH, HEIGHT = 900, 900
@@ -65,7 +65,6 @@ def load_wins():
                     time_data.append([level_name, elapsed])
                 except ValueError:
                     continue  # Skip malformed lines safely
-                    
     return wins, time_data
 # ------------------------------------------------------
 
@@ -114,60 +113,82 @@ def draw_pipe(screen, w, h, atlas, visited):
             if j[0]: # up
                 if [y2, x2] in visited:
                     pygame.draw.rect(screen, BLUE, (x + w//3, y, w//3, h//3))
-                pygame.draw.line(screen, BLACK, (x + w//3, y), (x + w//3, y + h//3), 4)
-                pygame.draw.line(screen, BLACK, (x + 2*w//3, y), (x + 2*w//3, y + h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + w//3, y), (x + w//3, y + h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y), (x + 2*w//3, y + h//3), 4)
             else:
-                pygame.draw.line(screen, BLACK, (x + 2*w//3, y + h//3), (x + w//3, y + h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y + h//3), (x + w//3, y + h//3), 4)
             if j[1]: # down
                 if [y2, x2] in visited:
                     pygame.draw.rect(screen, BLUE, (x + w//3, y + 2*h//3, w//3, h//3))
-                pygame.draw.line(screen, BLACK, (x + w//3, y + 2*h//3), (x + w//3, y + h), 4)
-                pygame.draw.line(screen, BLACK, (x + 2*w//3, y + 2*h//3), (x + 2*w//3, y + h), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + w//3, y + 2*h//3), (x + w//3, y + h), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y + 2*h//3), (x + 2*w//3, y + h), 4)
             else:
-                pygame.draw.line(screen, BLACK, (x + 2*w//3, y + 2*h//3), (x + w//3, y + 2*h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y + 2*h//3), (x + w//3, y + 2*h//3), 4)
             if j[2]: # left
                 if [y2, x2] in visited:
                     pygame.draw.rect(screen, BLUE, (x, y + h//3, w//3, h//3))
-                pygame.draw.line(screen, BLACK, (x, y + h//3), (x + w//3, y + h//3), 4)
-                pygame.draw.line(screen, BLACK, (x, y + 2*h//3), (x + w//3, y + 2*h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x, y + h//3), (x + w//3, y + h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x, y + 2*h//3), (x + w//3, y + 2*h//3), 4)
             else:
-                pygame.draw.line(screen, BLACK, (x + w//3, y + 2*h//3), (x + w//3, y + h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + w//3, y + 2*h//3), (x + w//3, y + h//3), 4)
             if j[3]: # right
                 if [y2, x2] in visited:
                     pygame.draw.rect(screen, BLUE, (x + 2*w//3, y + h//3, w//3, h//3))
-                pygame.draw.line(screen, BLACK, (x + 2*w//3, y + h//3), (x + w, y + h//3), 4)
-                pygame.draw.line(screen, BLACK, (x + 2*w//3, y + 2*h//3), (x + w, y + 2*h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y + h//3), (x + w, y + h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y + 2*h//3), (x + w, y + 2*h//3), 4)
             else:
-                pygame.draw.line(screen, BLACK, (x + 2*w//3, y + 2*h//3), (x + 2*w//3, y + h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y + 2*h//3), (x + 2*w//3, y + h//3), 4)
             x += w
             x2 += 1
         y2 += 1
         y += h
 
-def levelgrid(screen, x, y, w, h, rows, cols, saved_wins):
+def levelgrid(screen, x, y, w, h, rows, cols, saved_wins, show_timer):
     """Draws selection grid. Turns cells GREEN if that level name has been beaten."""
     font = pygame.font.SysFont(None, 100)
+    # A smaller font helps the timer string fit inside the grid cell cleanly
+    timer_font = pygame.font.SysFont(None, 50) 
+    
     cell_width = w // cols
     cell_height = h // rows
     k = 1
+    
     for i in range(rows):
         for j in range(cols):
             cell_rect = pygame.Rect(x + j * cell_width, y + i * cell_height, cell_width, cell_height)
-            
-            # Check if this level number is in our saved_wins set
-            bg_color = WHITE
             level_name = f"level{k}"
-            if level_name in saved_wins:
-                bg_color = GREEN
-            else:
-                bg_color = WHITE
-
-            pygame.draw.rect(screen, bg_color, cell_rect)
-            pygame.draw.rect(screen, BLACK, cell_rect, 1)
             
-            text_surf = font.render(str(k), True, BLACK)
+            # 1. Determine if this level has been beaten and find its record
+            bg_color = BGCOLOR
+            record_time = None
+            
+            for z in saved_wins:
+                if level_name == z[0]:  # Match the exact level name string
+                    bg_color = GREEN
+                    record_time = z[1]
+                    break  # Found it! Break early so it doesn't get overwritten
+
+            # 2. Draw the cell background and border
+            pygame.draw.rect(screen, bg_color, cell_rect)
+            pygame.draw.rect(screen, TEXTCOLOR, cell_rect, 1)
+            
+            # 3. Draw the level number text centered
+            text_surf = font.render(str(k), True, TEXTCOLOR)
             screen.blit(text_surf, (x + j * cell_width + cell_width//2 - text_surf.get_width()//2, 
                                     y + i * cell_height + cell_height//2 - text_surf.get_height()//2))
+            
+            # 4. Draw the personal best timer INSIDE the cell if enabled and beaten
+            if show_timer and record_time is not None:
+                total_seconds = record_time // 1000
+                minutes = total_seconds // 60
+                seconds = total_seconds % 60
+                milliseconds = record_time % 1000
+                time_string = f"{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
+                
+                timetext = timer_font.render(time_string, True, TEXTCOLOR)
+                # Places the timer text near the bottom edge of the individual cell
+                screen.blit(timetext, (x + j * cell_width + cell_width//2 - timetext.get_width()//2,
+                                       y + i * cell_height + cell_height - timetext.get_height() - 5))
             k += 1
 
 def get_hovered_cell(x, y, w, h, rows, cols):
@@ -229,13 +250,29 @@ def checkwin(atlas, visited):
     return True
 
 def timercheckbox(screen, x, y, size, is_checked):
-    pygame.draw.rect(screen, BLACK, (x, y, size, size), 4)
+    pygame.draw.rect(screen, TEXTCOLOR, (x, y, size, size), 4)
     font = pygame.font.SysFont(None, 50)
-    text_surf = font.render("Show Timer (BETA)", True, BLACK)
+    text_surf = font.render("Show Timer", True, TEXTCOLOR)
     screen.blit(text_surf, (x + size + 10, y + size//2 - text_surf.get_height()//2))
     mouse_pos = pygame.mouse.get_pos()
     if pygame.Rect(x, y, size, size).collidepoint(mouse_pos):
-         pygame.draw.rect(screen, BLACK, (x, y, size, size), 2)
+         pygame.draw.rect(screen, TEXTCOLOR, (x, y, size, size), 2)
+         if pygame.mouse.get_pressed()[0]:  # Left click
+             is_checked = not is_checked
+             pygame.time.delay(100)
+    if is_checked:
+        pygame.draw.line(screen, GREEN, (x + 5, y + size//2), (x + size//2, y + size - 5), 8)
+        pygame.draw.line(screen, GREEN, (x + size//2, y + size - 5), (x + size - 5, y + 5), 8)
+    return is_checked
+
+def darkthemecheckbox(screen, x, y, size, is_checked):
+    pygame.draw.rect(screen, TEXTCOLOR, (x, y, size, size), 4)
+    font = pygame.font.SysFont(None, 50)
+    text_surf = font.render("Dark Theme", True, TEXTCOLOR)
+    screen.blit(text_surf, (x + size + 10, y + size//2 - text_surf.get_height()//2))
+    mouse_pos = pygame.mouse.get_pos()
+    if pygame.Rect(x, y, size, size).collidepoint(mouse_pos):
+         pygame.draw.rect(screen, TEXTCOLOR, (x, y, size, size), 2)
          if pygame.mouse.get_pressed()[0]:  # Left click
              is_checked = not is_checked
              pygame.time.delay(100)
@@ -253,21 +290,21 @@ def timer(screen, x, y, elapsed_time, show_timer):
     seconds = total_seconds % 60
     milliseconds = elapsed_time % 1000
     time_string = f"{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
-    text_surf = font.render(time_string, True, BLACK)
+    text_surf = font.render(time_string, True, TEXTCOLOR)
     screen.blit(text_surf, (x, y))
-    return elapsed_time
+    return time_string
 
 def pagebutton(screen, x, y, w, h, page, last_page):
     if page < last_page:
          text = ">"
     font = pygame.font.SysFont(None, 50)
     button_rect = pygame.Rect(x, y, w, h)
-    pygame.draw.rect(screen, BLACK, button_rect, 4)
-    text_surf = font.render(text, True, BLACK)
+    pygame.draw.rect(screen, TEXTCOLOR, button_rect, 4)
+    text_surf = font.render(text, True, TEXTCOLOR)
     screen.blit(text_surf, (x + w//2 - text_surf.get_width()//2, y + h//2 - text_surf.get_height()//2))
     mouse_pos = pygame.mouse.get_pos()
     if button_rect.collidepoint(mouse_pos):
-        pygame.draw.rect(screen, BLACK, button_rect, 2)
+        pygame.draw.rect(screen, TEXTCOLOR, button_rect, 2)
         if pygame.mouse.get_pressed()[0]:  # Left click
             return True
     return False
@@ -286,8 +323,9 @@ res = load_level(current_level_name)
 if res:
     rows, cols, sourcex, sourcey, atlas = res
 
-show_timer = False
-elapsed_time = 0
+show_timer = True
+dark_theme = True
+record = 0
 start_ticks = 0
 scene = "menu"
 page = 0
@@ -295,7 +333,7 @@ last_page = 1
 running = True
 
 while running:
-    screen.fill(WHITE)
+    screen.fill(BGCOLOR)
     click_detected = False
     
    
@@ -309,8 +347,8 @@ while running:
                 if scene == "level":
                     visited = filledpipes(atlas, sourcex, sourcey)
                     if checkwin(atlas, visited):
-                        save_win(current_level_name, elapsed_time)
-                        elapsed_time = 0
+                        save_win(current_level_name, record)
+                        record = 0
 
                 scene = "menu"
             elif event.key == pygame.K_x:
@@ -349,24 +387,39 @@ while running:
         win = checkwin(atlas, visited)
         
         if win:
-            font = pygame.font.SysFont(None, 60)
-            text = font.render("You win!", True, BLACK)
-            screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2))
+            font = pygame.font.SysFont(None, 100)
+            text = font.render("You win!", True, TEXTCOLOR)
+            screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height()*3))
+            if show_timer:
+                text = font.render(time_string, True, TEXTCOLOR)
+                screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height()))
             #elapsed_time = 0
 
         else:  # Get current time in milliseconds
-            elapsed_time = pygame.time.get_ticks() - start_ticks  # Update elapsed_time with the time since last tick
-            timer(screen, 25, 25, elapsed_time, show_timer)
+            record = pygame.time.get_ticks() - start_ticks  # Update elapsed_time with the time since last tick
+            time_string = timer(screen, 25, 25, record, show_timer)
 
     elif scene == "menu":
         font = pygame.font.SysFont(None, 100)
-        text = font.render("Choose level", True, BLACK)
+        text = font.render("Choose level", True, TEXTCOLOR)
         screen.blit(text, (WIDTH // 2 - text.get_width() // 2, 25))
         show_timer = timercheckbox(screen, 25, HEIGHT - 75, 50, show_timer)
+        dark_theme = darkthemecheckbox(screen, 325, HEIGHT - 75, 50, dark_theme)
+        if dark_theme:
+            BGCOLOR = (80,80,80)
+            TEXTCOLOR = (200,200,200)
+            BLUE = (0, 58, 112)
+            GREEN = (0, 94, 24)
+        else:
+            BGCOLOR = (255,255,255)
+            TEXTCOLOR = (0,0,0)
+            BLUE = (0, 195, 255)
+            GREEN = (0, 200, 100)
+
         pagebutton(screen, WIDTH - 75, HEIGHT - 75, 50, 50, page, last_page)
         
         # Grid now draws green rectangles if level was previously saved
-        levelgrid(screen, 100, 100, WIDTH-200, HEIGHT-200, 4, 4, saved_wins)
+        levelgrid(screen, 100, 100, WIDTH-200, HEIGHT-200, 4, 4, levelandtime, show_timer)
         i, j, cell_rect = get_hovered_cell(100, 100, WIDTH-200, HEIGHT-200, 4, 4)
         
         if i is not None and j is not None:
