@@ -1,5 +1,6 @@
 import pygame
 import pathlib
+import random
 
 # Colors
 WHITE = (255, 255, 255)
@@ -325,7 +326,7 @@ while running:
             font = pygame.font.SysFont(None, 60)
             text = font.render("You win!", True, BLACK)
             screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2))
-            elapsed_time = 0
+            #elapsed_time = 0
 
         else:  # Get current time in milliseconds
             elapsed_time = pygame.time.get_ticks() - start_ticks  # Update elapsed_time with the time since last tick
