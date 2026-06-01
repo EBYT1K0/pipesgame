@@ -366,9 +366,9 @@ def load_settings():
 screen_width, screen_height = 1200, 900
 pygame.init()
 pygame.mixer.init()
-click_sound = pygame.mixer.Sound(pathlib.Path("sounds") / "click.wav")
+click_sound = pygame.mixer.Sound(str(pathlib.Path(__file__).parent / "sounds" / "click.wav"))
 click_sound.set_volume(0.2)
-whoosh_sound = pygame.mixer.Sound(pathlib.Path("sounds") / "whoosh.wav")
+whoosh_sound = pygame.mixer.Sound(str(pathlib.Path(__file__).parent / "sounds" / "whoosh.wav"))
 whoosh_sound.set_volume(0.2)
 screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
 pygame.display.set_caption("Pipes")
