@@ -1,0 +1,4 @@
+Show Timer:True
+Dark Theme:True
+Borderless Window:False
+Mute Sound:False
