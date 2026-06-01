@@ -103,41 +103,41 @@ def load_level(level_name):
     except FileNotFoundError:
         return None
 
-def draw_pipe(screen, w, h, atlas, visited):
+def draw_pipe(screen, w, h, atlas, visited, sx, sy):
     y, y2 = 0, 0
     for i in atlas:
         x, x2 = 0, 0  
         for j in i: 
             if [y2, x2] in visited:
-                pygame.draw.rect(screen, BLUE, (x + w//3, y + h//3, w//3, h//3))
+                pygame.draw.rect(screen, BLUE, (x + w//3 + sx, y + h//3 + sy, w//3, h//3))
             if j[0]: # up
                 if [y2, x2] in visited:
-                    pygame.draw.rect(screen, BLUE, (x + w//3, y, w//3, h//3))
-                pygame.draw.line(screen, TEXTCOLOR, (x + w//3, y), (x + w//3, y + h//3), 4)
-                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y), (x + 2*w//3, y + h//3), 4)
+                    pygame.draw.rect(screen, BLUE, (x + w//3 + sx, y + sy, w//3, h//3))
+                pygame.draw.line(screen, TEXTCOLOR, (x + w//3 + sx, y + sy), (x + w//3 + sx, y + h//3 + sy), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3 + sx, y + sy), (x + 2*w//3 + sx, y + h//3 + sy), 4)
             else:
-                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y + h//3), (x + w//3, y + h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3 + sx, y + h//3 + sy), (x + w//3 + sx, y + h//3 + sy), 4)
             if j[1]: # down
                 if [y2, x2] in visited:
-                    pygame.draw.rect(screen, BLUE, (x + w//3, y + 2*h//3, w//3, h//3))
-                pygame.draw.line(screen, TEXTCOLOR, (x + w//3, y + 2*h//3), (x + w//3, y + h), 4)
-                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y + 2*h//3), (x + 2*w//3, y + h), 4)
+                    pygame.draw.rect(screen, BLUE, (x + w//3 + sx, y + 2*h//3 + sy, w//3, h//3))
+                pygame.draw.line(screen, TEXTCOLOR, (x + w//3 + sx, y + 2*h//3 + sy), (x + w//3 + sx, y + h + sy), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3 + sx, y + 2*h//3 + sy), (x + 2*w//3 + sx, y + h + sy), 4)
             else:
-                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y + 2*h//3), (x + w//3, y + 2*h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3 + sx, y + 2*h//3 + sy), (x + w//3 + sx, y + 2*h//3 + sy), 4)
             if j[2]: # left
                 if [y2, x2] in visited:
-                    pygame.draw.rect(screen, BLUE, (x, y + h//3, w//3, h//3))
-                pygame.draw.line(screen, TEXTCOLOR, (x, y + h//3), (x + w//3, y + h//3), 4)
-                pygame.draw.line(screen, TEXTCOLOR, (x, y + 2*h//3), (x + w//3, y + 2*h//3), 4)
+                    pygame.draw.rect(screen, BLUE, (x + sx, y + h//3 + sy, w//3, h//3))
+                pygame.draw.line(screen, TEXTCOLOR, (x + sx, y + h//3 + sy), (x + w//3 + sx, y + h//3 + sy), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + sx, y + 2*h//3 + sy), (x + w//3 + sx, y + 2*h//3 + sy), 4)
             else:
-                pygame.draw.line(screen, TEXTCOLOR, (x + w//3, y + 2*h//3), (x + w//3, y + h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + w//3 + sx, y + 2*h//3 + sy), (x + w//3 + sx, y + h//3 + sy), 4)
             if j[3]: # right
                 if [y2, x2] in visited:
-                    pygame.draw.rect(screen, BLUE, (x + 2*w//3, y + h//3, w//3, h//3))
-                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y + h//3), (x + w, y + h//3), 4)
-                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y + 2*h//3), (x + w, y + 2*h//3), 4)
+                    pygame.draw.rect(screen, BLUE, (x + 2*w//3 + sx, y + h//3 + sy, w//3, h//3))
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3 + sx, y + h//3 + sy), (x + w + sx, y + h//3 + sy), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3 + sx, y + 2*h//3 + sy), (x + w + sx, y + 2*h//3 + sy), 4)
             else:
-                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3, y + 2*h//3), (x + 2*w//3, y + h//3), 4)
+                pygame.draw.line(screen, TEXTCOLOR, (x + 2*w//3 + sx, y + 2*h//3 + sy), (x + 2*w//3 + sx, y + h//3 + sy), 4)
             x += w
             x2 += 1
         y2 += 1
@@ -249,26 +249,10 @@ def checkwin(atlas, visited):
                 return False
     return True
 
-def timercheckbox(screen, x, y, size, is_checked):
+def drawcheckbox(screen, x, y, size, is_checked, text):
     pygame.draw.rect(screen, TEXTCOLOR, (x, y, size, size), 4)
     font = pygame.font.SysFont(None, 50)
-    text_surf = font.render("Show Timer", True, TEXTCOLOR)
-    screen.blit(text_surf, (x + size + 10, y + size//2 - text_surf.get_height()//2))
-    mouse_pos = pygame.mouse.get_pos()
-    if pygame.Rect(x, y, size, size).collidepoint(mouse_pos):
-         pygame.draw.rect(screen, TEXTCOLOR, (x, y, size, size), 2)
-         if pygame.mouse.get_pressed()[0]:  # Left click
-             is_checked = not is_checked
-             pygame.time.delay(100)
-    if is_checked:
-        pygame.draw.line(screen, GREEN, (x + 5, y + size//2), (x + size//2, y + size - 5), 8)
-        pygame.draw.line(screen, GREEN, (x + size//2, y + size - 5), (x + size - 5, y + 5), 8)
-    return is_checked
-
-def darkthemecheckbox(screen, x, y, size, is_checked):
-    pygame.draw.rect(screen, TEXTCOLOR, (x, y, size, size), 4)
-    font = pygame.font.SysFont(None, 50)
-    text_surf = font.render("Dark Theme", True, TEXTCOLOR)
+    text_surf = font.render(text, True, TEXTCOLOR)
     screen.blit(text_surf, (x + size + 10, y + size//2 - text_surf.get_height()//2))
     mouse_pos = pygame.mouse.get_pos()
     if pygame.Rect(x, y, size, size).collidepoint(mouse_pos):
@@ -325,9 +309,12 @@ def pagebutton(screen, x, y, w, h, page, last_page):
             return page-1
     return page
 
+def drawframe(screen, x, y, w, h):
+    pygame.draw.rect(screen, TEXTCOLOR, (x, y, w, h), 2)
+
 # Initialize Game
 pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Pipes")
 clock = pygame.time.Clock()
 
@@ -339,6 +326,7 @@ res = load_level(current_level_name)
 if res:
     rows, cols, sourcex, sourcey, atlas = res
 
+swidth, sheight = 900, 900
 show_timer = True
 dark_theme = True
 record = 0
@@ -359,6 +347,10 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.VIDEORESIZE:
+            # Recreate the display with the new dimensions
+            swidth, sheight = event.size
+            screen = pygame.display.set_mode((swidth, sheight), pygame.RESIZABLE)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 if scene == "level":
@@ -387,31 +379,32 @@ while running:
                     icon_path_cl = pathlib.Path(__file__).parent / "assets" / "iconlm.png"
                     pygame.display.set_caption("Pipes - Custom Level")
                     pygame.display.set_icon(pygame.image.load(icon_path_cl))
-                    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+                    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             click_detected = True
 
     if scene == "level":
-        i, j, cell_rect = get_hovered_cell(0, 0, WIDTH, HEIGHT, rows, cols)
+        drawframe(screen, (swidth - WIDTH)//2 - 4, (sheight - HEIGHT)//2 - 4, WIDTH + 8, HEIGHT + 8)
+        i, j, cell_rect = get_hovered_cell((swidth - WIDTH)//2, (sheight - HEIGHT)//2, WIDTH, HEIGHT, rows, cols)
         if i is not None and j is not None:
             pygame.draw.rect(screen, BLUE, cell_rect, 4)
-            if click_detected:
+            if click_detected and not win:
                 atlas[i][j] = rotation(atlas, i, j)
                 
         visited = filledpipes(atlas, sourcex, sourcey)
-        draw_pipe(screen, WIDTH // cols, HEIGHT // rows, atlas, visited)
+        draw_pipe(screen, WIDTH // cols, HEIGHT // rows, atlas, visited, (swidth - WIDTH)//2, (sheight - HEIGHT)//2)
         win = checkwin(atlas, visited)
         
         if win:
             font = pygame.font.SysFont(None, 100)
             text = font.render("You win!", True, TEXTCOLOR)
-            screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height()*3))
+            screen.blit(text, (swidth // 2 - text.get_width() // 2, sheight // 2 - text.get_height() * 3))
             if show_timer:
                 if time_string == None:
                     time_string = "00:00.000"
                 text = font.render(time_string, True, TEXTCOLOR)
-                screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height()))
+                screen.blit(text, (swidth // 2 - text.get_width() // 2, sheight // 2 - text.get_height()))
             #elapsed_time = 0
 
         else:  # Get current time in milliseconds
@@ -421,9 +414,9 @@ while running:
     elif scene == "menu":
         font = pygame.font.SysFont(None, 100)
         text = font.render("Choose level", True, TEXTCOLOR)
-        screen.blit(text, (WIDTH // 2 - text.get_width() // 2, 25))
-        show_timer = timercheckbox(screen, 25, HEIGHT - 75, 50, show_timer)
-        dark_theme = darkthemecheckbox(screen, 325, HEIGHT - 75, 50, dark_theme)
+        screen.blit(text, (swidth // 2 - text.get_width() // 2, (sheight - HEIGHT)//2 + 25))
+        show_timer = drawcheckbox(screen, (swidth - WIDTH) // 2 + 25, (sheight - HEIGHT)//2 + HEIGHT - 75, 50, show_timer, "Show Timer")
+        dark_theme = drawcheckbox(screen, (swidth - WIDTH) // 2 + 325, (sheight - HEIGHT)//2 + HEIGHT - 75, 50, dark_theme, "Dark Theme")
         if dark_theme:
             BGCOLOR = (80,80,80)
             TEXTCOLOR = (200,200,200)
@@ -435,11 +428,11 @@ while running:
             BLUE = (0, 195, 255)
             GREEN = (0, 200, 100)
 
-        page = pagebutton(screen, WIDTH - 75, HEIGHT - 75, 50, 50, page, last_page)
+        page = pagebutton(screen, (swidth - WIDTH)//2 + WIDTH - 75, (sheight - HEIGHT)//2 + HEIGHT - 75, 50, 50, page, last_page)
         
         # Grid now draws green rectangles if level was previously saved
-        levelgrid(screen, 100, 100, WIDTH-200, HEIGHT-200, 4, 4, levelandtime, show_timer, page)
-        i, j, cell_rect = get_hovered_cell(100, 100, WIDTH-200, HEIGHT-200, 4, 4)
+        levelgrid(screen, (swidth - WIDTH)//2 + 100, (sheight - HEIGHT)//2 + 100, WIDTH-200, HEIGHT-200, 4, 4, levelandtime, show_timer, page)
+        i, j, cell_rect = get_hovered_cell((swidth - WIDTH)//2 + 100, (sheight - HEIGHT)//2 + 100, WIDTH-200, HEIGHT-200, 4, 4)
         
         if i is not None and j is not None:
             pygame.draw.rect(screen, BLUE, cell_rect, 4)
