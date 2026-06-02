@@ -1,10 +1,9 @@
-Pipes
-=
-Connect all pipes to win
+<img width="900" height="300" alt="logo" src="https://github.com/user-attachments/assets/1f53e6af-a6b3-4eb0-b189-9f21e5988a1c" />
 
 Install
 -
 1. Download the latest release
+
 2. Unpack the zip file
 3. Run the exe file and play
 
