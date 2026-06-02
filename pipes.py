@@ -432,9 +432,15 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
         elif event.type == pygame.VIDEORESIZE:
-            screen_width, screen_height = event.size
-            screen = pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info))
+            if not game_settings["Borderless Window"]:
+                new_w, new_h = event.size
+                # Пересоздаем окно ТОЛЬКО если размер РЕАЛЬНО изменился (а не просто спамится композитором)
+                if new_w != screen_width or new_h != screen_height:
+                    screen_width, screen_height = new_w, new_h
+                    screen = pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info) | pygame.DOUBLEBUF)
+
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 if scene == "level":
