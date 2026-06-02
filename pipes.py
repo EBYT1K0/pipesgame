@@ -21,6 +21,7 @@ light_x = pygame.transform.smoothscale(light_x_unscaled, (75, 75))
 dark_x = pygame.transform.smoothscale(dark_x_unscaled, (75, 75))
 pygame.display.set_icon(pygame.image.load(icon_path))
 os.environ['SDL_VIDEO_CENTERED'] = '1'
+wm_info = pygame.display.get_wm_info()
 
 # ----------------- SAVE & LOAD SYSTEM -----------------
 def save_win(level_name, elapsed_time):
@@ -328,6 +329,13 @@ def textured_button(screen, x, y, w, h, icon):
 def draw_frame(screen, x, y, w, h):
     pygame.draw.rect(screen, TEXT_COLOR, (x, y, w, h), 2)
 
+def wminfodisplaymode(screen, wm_info):
+    if "wayland" not in wm_info:
+        screen = pygame.display.set_mode((screen_width, screen_height))
+    else:
+        screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
+    return screen
+
 # ----------------- NEW DYNAMIC SETTINGS SYSTEM -----------------
 
 # 1. Just add new settings here! The UI and storage will adjust automatically.
@@ -370,7 +378,8 @@ click_sound = pygame.mixer.Sound(str(pathlib.Path(__file__).parent / "sounds" / 
 click_sound.set_volume(0.2)
 whoosh_sound = pygame.mixer.Sound(str(pathlib.Path(__file__).parent / "sounds" / "whoosh.wav"))
 whoosh_sound.set_volume(0.2)
-screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
+screen = pygame.display.set_mode((screen_width, screen_height))
+screen = wminfodisplaymode(screen, wm_info)
 pygame.display.set_caption("Pipes")
 clock = pygame.time.Clock()
 
@@ -394,10 +403,10 @@ last_page = 1
 
 if game_settings["Borderless Window"]:
     screen_width, screen_height = pygame.display.get_desktop_sizes()[0]
-    pygame.display.set_mode((screen_width, screen_height), pygame.NOFRAME)
+    screen = pygame.display.set_mode((screen_width, screen_height), pygame.NOFRAME)
 else:
     screen_width, screen_height = 1200, 900
-    pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
+    screen = wminfodisplaymode(screen, wm_info)
 running = True
 
 while running:
@@ -411,7 +420,7 @@ while running:
             running = False
         elif event.type == pygame.VIDEORESIZE:
             screen_width, screen_height = event.size
-            screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
+            screen = wminfodisplaymode(screen, wm_info)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 if scene == "level":
@@ -439,15 +448,15 @@ while running:
                     icon_path_cl = pathlib.Path(__file__).parent / "assets" / "iconlm.png"
                     pygame.display.set_caption("Pipes - Custom Level")
                     pygame.display.set_icon(pygame.image.load(icon_path_cl))
-                    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+                    screen = wminfodisplaymode(screen, wm_info)
             elif event.key == pygame.K_F11:
                 game_settings["Borderless Window"] = not game_settings["Borderless Window"]
                 if game_settings["Borderless Window"]:
                     screen_width, screen_height = pygame.display.get_desktop_sizes()[0]
-                    pygame.display.set_mode((screen_width, screen_height), pygame.NOFRAME)
+                    screen = pygame.display.set_mode((screen_width, screen_height), pygame.NOFRAME)
                 else:
                     screen_width, screen_height = 1200, 900
-                    pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
+                    screen = wminfodisplaymode(screen, wm_info)
                 save_settings(game_settings)
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -485,7 +494,7 @@ while running:
         screen.blit(text, (screen_width // 2 - text.get_width() // 2, (screen_height - HEIGHT)//2 + 25))
         
         if game_settings["Dark Theme"]:
-            BGCOLOR = (80,80,80)
+            BGCOLOR = (30,30,30)
             TEXT_COLOR = (200,200,200)
             BLUE = (0, 58, 112)
             GREEN = (0, 94, 24)
@@ -543,7 +552,7 @@ while running:
         # ------------------------------------------
 
         if game_settings["Dark Theme"]:
-            BGCOLOR = (80,80,80)
+            BGCOLOR = (30,30,30)
             TEXT_COLOR = (200,200,200)
             BLUE = (0, 58, 112)
             GREEN = (0, 94, 24)
@@ -564,10 +573,10 @@ while running:
         if textured_button(screen, (screen_width - WIDTH)//2 + WIDTH-200 + 125,(screen_height - HEIGHT)//2 + 25, 75, 75, settings_icon):
             if game_settings["Borderless Window"]:
                 screen_width, screen_height = pygame.display.get_desktop_sizes()[0]
-                pygame.display.set_mode((screen_width, screen_height), pygame.NOFRAME)
+                screen = pygame.display.set_mode((screen_width, screen_height), pygame.NOFRAME)
             else:
                 screen_width, screen_height = 1200, 900
-                pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
+                screen = wminfodisplaymode(screen, wm_info)
             save_settings(game_settings)
             scene = "menu"
             
