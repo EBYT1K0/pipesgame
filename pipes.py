@@ -1,6 +1,7 @@
 import pygame
 import pathlib
 import os
+import random
 
 # Colors
 BGCOLOR = (255, 255, 255)
@@ -329,9 +330,11 @@ def screenflags(wm_info):
 # 1. Just add new settings here! The UI and storage will adjust automatically.
 DEFAULT_SETTINGS = {
     "Show Timer": True,
+    "Show Level Name": True,
     "Dark Theme": True,
     "Borderless Window": False,
     "Mute Sound": False,
+    "Mute Music": True,
   # "New Setting Example": False  <-- Try adding your next settings here!
 }
 
@@ -379,6 +382,7 @@ click_sound = pygame.mixer.Sound(str(pathlib.Path(__file__).parent / "sounds" / 
 click_sound.set_volume(0.2)
 whoosh_sound = pygame.mixer.Sound(str(pathlib.Path(__file__).parent / "sounds" / "whoosh.wav"))
 whoosh_sound.set_volume(0.2)
+music_list = [f.name for f in pathlib.Path('music').iterdir() if f.is_file()]
 screen = pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info))
 pygame.display.set_caption("Pipes")
 clock = pygame.time.Clock()
@@ -429,6 +433,7 @@ while running:
                         save_win(current_level_name, record)
                         record = 0
                 scene = "menu"
+                WIDTH, HEIGHT = 900, 900
             elif event.key == pygame.K_x:
                 level = input("Enter level name: ")
                 res = load_level(level)
@@ -487,6 +492,10 @@ while running:
         else:
             record = pygame.time.get_ticks() - start_ticks
             time_string = timer(screen, 25, 25, record, game_settings["Show Timer"])
+            if game_settings["Show Level Name"]:
+                font = pygame.font.SysFont(None, 100)
+                level_text = font.render(current_level_name, True, TEXT_COLOR)
+                screen.blit(level_text, (screen_width // 2 - level_text.get_width() // 2, 25))
 
     elif scene == "menu":
         font = pygame.font.SysFont(None, 100)
@@ -579,7 +588,13 @@ while running:
                 pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info))
             save_settings(game_settings)
             scene = "menu"
-            
+    if not pygame.mixer.music.get_busy() and not game_settings["Mute Music"] and music_list:
+        next_music = random.choice(music_list)
+        pygame.mixer.music.load(str(pathlib.Path(__file__).parent / "music" / next_music))
+        pygame.mixer.music.play()
+        pygame.mixer.music.set_volume(0.2)
+    elif game_settings["Mute Music"]:
+        pygame.mixer.music.stop()
     clock.tick(60)
     pygame.display.update()
 
