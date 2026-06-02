@@ -392,7 +392,13 @@ click_sound = pygame.mixer.Sound(str(pathlib.Path(__file__).parent / "sounds" / 
 click_sound.set_volume(0.2)
 whoosh_sound = pygame.mixer.Sound(str(pathlib.Path(__file__).parent / "sounds" / "whoosh.wav"))
 whoosh_sound.set_volume(0.2)
-music_list = [f.name for f in pathlib.Path('music').iterdir() if f.is_file()]
+music_folder = pathlib.Path(__file__).parent / "music"
+
+if music_folder.exists():
+    music_list = [f.name for f in music_folder.iterdir() if f.is_file()]
+else:
+    print(f"Music folder not found: {music_folder}")
+    music_list = []
 screen = pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info))
 pygame.display.set_caption("Pipes")
 clock = pygame.time.Clock()
@@ -621,7 +627,7 @@ while running:
             running = False
     if not pygame.mixer.music.get_busy() and not game_settings["Mute Music"] and music_list:
         next_music = random.choice(music_list)
-        pygame.mixer.music.load(str(pathlib.Path(__file__).parent / "music" / next_music))
+        pygame.mixer.music.load(str(music_folder / next_music))
         pygame.mixer.music.play()
         pygame.mixer.music.set_volume(0.1)
     elif game_settings["Mute Music"]:
