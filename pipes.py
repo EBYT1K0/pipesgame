@@ -376,6 +376,16 @@ light_x_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / 
 dark_x_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "x_dark.png")
 light_x = pygame.transform.smoothscale(light_x_unscaled, (75, 75))
 dark_x = pygame.transform.smoothscale(dark_x_unscaled, (75, 75))
+light_play_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "play_light.png")
+dark_play_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "play_dark.png")
+light_play = pygame.transform.smoothscale(light_play_unscaled, (200, 200))
+dark_play = pygame.transform.smoothscale(dark_play_unscaled, (200, 200))
+light_backarrow_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "backarrow_light.png")
+dark_backarrow_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "backarrow_dark.png")
+light_backarrow = pygame.transform.smoothscale(light_backarrow_unscaled, (75, 75))
+dark_backarrow = pygame.transform.smoothscale(dark_backarrow_unscaled, (75, 75))
+logo_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "logo.png")
+logo = pygame.transform.scale(logo_unscaled, (900, 300))
 pygame.display.set_icon(pygame.image.load(icon_path))
 wm_info = pygame.display.get_wm_info()
 click_sound = pygame.mixer.Sound(str(pathlib.Path(__file__).parent / "sounds" / "click.wav"))
@@ -401,7 +411,7 @@ game_settings = load_settings()
 record = 0
 start_ticks = 0
 time_string = "00:00.000"
-scene = "menu"
+scene = "main_menu"
 page = 0
 last_page = 1
 
@@ -432,7 +442,9 @@ while running:
                     if check_win(atlas, visited):
                         save_win(current_level_name, record)
                         record = 0
-                scene = "menu"
+                    scene = "selector"
+                    break
+                scene = "main_menu"
                 WIDTH, HEIGHT = 900, 900
             elif event.key == pygame.K_x:
                 level = input("Enter level name: ")
@@ -497,32 +509,13 @@ while running:
                 level_text = font.render(current_level_name, True, TEXT_COLOR)
                 screen.blit(level_text, (screen_width // 2 - level_text.get_width() // 2, 25))
 
-    elif scene == "menu":
+    elif scene == "selector":
         font = pygame.font.SysFont(None, 100)
         text = font.render("Choose level", True, TEXT_COLOR)
         screen.blit(text, (screen_width // 2 - text.get_width() // 2, (screen_height - HEIGHT)//2 + 25))
-        
-        if game_settings["Dark Theme"]:
-            BGCOLOR = (30,30,30)
-            TEXT_COLOR = (200,200,200)
-            BLUE = (0, 58, 112)
-            GREEN = (0, 94, 24)
-            settings_icon = dark_settings
-            x_icon = dark_x
-        else:
-            BGCOLOR = (255,255,255)
-            TEXT_COLOR = (0,0,0)
-            BLUE = (0, 195, 255)
-            GREEN = (0, 200, 100)
-            settings_icon = light_settings
-            x_icon = light_x
-            
         page = pagebutton(screen, screen_width//2, (screen_height - HEIGHT)//2 + HEIGHT - 75, 50, 50, page, last_page)
-        if textured_button(screen, (screen_width - WIDTH)//2 + WIDTH-200 + 125,(screen_height - HEIGHT)//2 + 25, 75, 75, settings_icon):
-            scene = "settings"
-        if game_settings["Borderless Window"]:
-            if textured_button(screen, 25,25, 75, 75, x_icon):
-                running = False
+        if textured_button(screen, 25,25, 75, 75, back_icon):
+            scene = "main_menu"
         
         level_grid(screen, (screen_width - WIDTH)//2 + 100, (screen_height - HEIGHT)//2 + 100, WIDTH-200, HEIGHT-200, 4, 4, level_and_time, game_settings["Show Timer"], page)
         i, j, cell_rect = get_hovered_cell((screen_width - WIDTH)//2 + 100, (screen_height - HEIGHT)//2 + 100, WIDTH-200, HEIGHT-200, 4, 4)
@@ -566,12 +559,18 @@ while running:
             BLUE = (0, 58, 112)
             GREEN = (0, 94, 24)
             settings_icon = dark_settings
+            x_icon = dark_x
+            play_icon = dark_play
+            back_icon = dark_backarrow
         else:
             BGCOLOR = (255,255,255)
             TEXT_COLOR = (0,0,0)
             BLUE = (0, 195, 255)
             GREEN = (0, 200, 100)
             settings_icon = light_settings
+            x_icon = light_x
+            play_icon = light_play
+            back_icon = light_backarrow
         if game_settings["Mute Sound"]:
             click_sound.set_volume(0)
             whoosh_sound.set_volume(0)
@@ -579,7 +578,7 @@ while running:
             click_sound.set_volume(0.2)
             whoosh_sound.set_volume(0.2)
             
-        if textured_button(screen, (screen_width - WIDTH)//2 + WIDTH-200 + 125,(screen_height - HEIGHT)//2 + 25, 75, 75, settings_icon):
+        if textured_button(screen, 25,25, 75, 75, back_icon):
             if game_settings["Borderless Window"]:
                 screen_width, screen_height = pygame.display.get_desktop_sizes()[0]
                 pygame.display.set_mode((screen_width, screen_height), pygame.NOFRAME)
@@ -587,12 +586,38 @@ while running:
                 screen_width, screen_height = 1200, 900
                 pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info))
             save_settings(game_settings)
-            scene = "menu"
+            scene = "main_menu"
+    elif scene == "main_menu":
+        screen.blit(logo, (screen_width // 2 - logo.get_width() // 2, 50))
+        if game_settings["Dark Theme"]:
+            BGCOLOR = (30,30,30)
+            TEXT_COLOR = (200,200,200)
+            BLUE = (0, 58, 112)
+            GREEN = (0, 94, 24)
+            settings_icon = dark_settings
+            x_icon = dark_x
+            play_icon = dark_play
+            back_icon = dark_backarrow
+        else:
+            BGCOLOR = (255,255,255)
+            TEXT_COLOR = (0,0,0)
+            BLUE = (0, 195, 255)
+            GREEN = (0, 200, 100)
+            settings_icon = light_settings
+            x_icon = light_x
+            play_icon = light_play
+            back_icon = light_backarrow
+        if textured_button(screen, screen_width//2 - play_icon.get_width()//2, screen_height//2 - play_icon.get_height()//2, 200, 200, play_icon):
+            scene = "selector"
+        if textured_button(screen, screen_width//2 - settings_icon.get_width()//2 - 200, screen_height//2 - settings_icon.get_height()//2, 75,75, settings_icon):
+            scene = "settings"
+        if textured_button(screen, screen_width//2 - x_icon.get_width()//2 + 200, screen_height//2 - x_icon.get_height()//2, 75,75, x_icon):
+            running = False
     if not pygame.mixer.music.get_busy() and not game_settings["Mute Music"] and music_list:
         next_music = random.choice(music_list)
         pygame.mixer.music.load(str(pathlib.Path(__file__).parent / "music" / next_music))
         pygame.mixer.music.play()
-        pygame.mixer.music.set_volume(0.2)
+        pygame.mixer.music.set_volume(0.1)
     elif game_settings["Mute Music"]:
         pygame.mixer.music.stop()
     clock.tick(60)
