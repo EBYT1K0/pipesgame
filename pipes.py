@@ -11,17 +11,6 @@ GREEN = (0, 200, 100)  # Color used to show a level is saved/completed!
 WIDTH, HEIGHT = 900, 900
 
 icon_path = pathlib.Path(__file__).parent / "assets" / f"icon4.png"
-light_settings_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "settings_light.png")
-dark_settings_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "settings_dark.png")
-light_settings = pygame.transform.smoothscale(light_settings_unscaled, (75, 75))
-dark_settings = pygame.transform.smoothscale(dark_settings_unscaled, (75, 75))
-light_x_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "x_light.png")
-dark_x_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "x_dark.png")
-light_x = pygame.transform.smoothscale(light_x_unscaled, (75, 75))
-dark_x = pygame.transform.smoothscale(dark_x_unscaled, (75, 75))
-pygame.display.set_icon(pygame.image.load(icon_path))
-os.environ['SDL_VIDEO_CENTERED'] = '1'
-wm_info = pygame.display.get_wm_info()
 
 # ----------------- SAVE & LOAD SYSTEM -----------------
 def save_win(level_name, elapsed_time):
@@ -330,7 +319,7 @@ def draw_frame(screen, x, y, w, h):
     pygame.draw.rect(screen, TEXT_COLOR, (x, y, w, h), 2)
 
 def screenflags(wm_info):
-    if "wayland" in wm_info:
+    if wm_info.get("display_name", "").startswith("wayland") or "wayland" in wm_info.get("display_name", "").lower():
         return pygame.RESIZABLE | pygame.SCALED
     return pygame.RESIZABLE
 
@@ -371,8 +360,21 @@ def load_settings():
 
 # Initialize Game
 screen_width, screen_height = 1200, 900
+os.environ['SDL_VIDEO_CENTERED'] = '1'
 pygame.init()
 pygame.mixer.init()
+
+# Load images after pygame.init() so the display subsystem is ready
+light_settings_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "settings_light.png")
+dark_settings_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "settings_dark.png")
+light_settings = pygame.transform.smoothscale(light_settings_unscaled, (75, 75))
+dark_settings = pygame.transform.smoothscale(dark_settings_unscaled, (75, 75))
+light_x_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "x_light.png")
+dark_x_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "x_dark.png")
+light_x = pygame.transform.smoothscale(light_x_unscaled, (75, 75))
+dark_x = pygame.transform.smoothscale(dark_x_unscaled, (75, 75))
+pygame.display.set_icon(pygame.image.load(icon_path))
+wm_info = pygame.display.get_wm_info()
 click_sound = pygame.mixer.Sound(str(pathlib.Path(__file__).parent / "sounds" / "click.wav"))
 click_sound.set_volume(0.2)
 whoosh_sound = pygame.mixer.Sound(str(pathlib.Path(__file__).parent / "sounds" / "whoosh.wav"))
