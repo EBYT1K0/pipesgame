@@ -335,7 +335,7 @@ DEFAULT_SETTINGS = {
     "Borderless Window": False,
     "Mute Sound": False,
     "Mute Music": True,
-    "4K Mode": False,
+    "2K Mode": False,
   # "New Setting Example": False  <-- Try adding your next settings here!
 }
 
@@ -598,8 +598,8 @@ while running:
             else:
                 screen_width, screen_height = 1200, 900
                 pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info))
-            if game_settings["4K Mode"]:
-                WIDTH, HEIGHT = 3600, 3600
+            if game_settings["2K Mode"]:
+                WIDTH, HEIGHT = 1800, 1800
             else:
                 WIDTH, HEIGHT = 900, 900
             save_settings(game_settings)
