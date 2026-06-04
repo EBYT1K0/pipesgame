@@ -110,7 +110,7 @@ if userinput[0:2] != "/n":
     level = userinput
     level += ".txt"
 
-    file_path = pathlib.Path(__file__).parent / "levels" / level
+    file_path = pathlib.Path(__file__).parent / "custom_levels" / level
     with open(file_path, "r") as file:
         for line in file:
             lines.append(line.strip())
@@ -219,6 +219,7 @@ while running:
                 sourcex = int(input("Enter source x coordinate (0-indexed): "))
                 sourcey = int(input("Enter source y coordinate (0-indexed): "))
                 atlas = [[[False, False, False, False] for j in range(cols)] for i in range(rows)]
+                pygame.display.set_caption("Pipes LM - New Level")
         x, y, click_type = selection(screen, 0, 0, WIDTH, HEIGHT, rows, cols)
         if x is not None and y is not None:
             if click_type == "left":
@@ -236,7 +237,7 @@ while running:
             if event.key == pygame.K_s:
                 level_name = input("Enter level name to save as: ")
                 level_name += ".txt"
-                file_path = pathlib.Path(__file__).parent / "levels" / level_name
+                file_path = pathlib.Path(__file__).parent / "custom_levels" / level_name
                 with open(file_path, "w") as file:
                     file.write(f"{rows:02d},{cols:02d}\n")
                     file.write(f"{sourcex:02d},{sourcey:02d}\n")
