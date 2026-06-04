@@ -13,6 +13,17 @@ WIDTH, HEIGHT = 900, 900
 
 icon_path = pathlib.Path(__file__).parent / "assets" / f"icon4.png"
 
+# ----------------- NEW DYNAMIC SETTINGS SYSTEM -----------------
+DEFAULT_SETTINGS = {
+    "Show Timer": True,
+    "Show Level Name": True,
+    "Dark Theme": True,
+    "Borderless Window": False,
+    "Mute Sound": False,
+    "Mute Music": True,
+    "2K Mode": False,
+}
+
 # ----------------- SAVE & LOAD SYSTEM -----------------
 def save_win(level_name, elapsed_time):
     """Saves a level win to saves.txt, updating the time ONLY if it is faster."""
@@ -64,11 +75,10 @@ def load_wins():
                 except ValueError:
                     continue
     return wins, time_data
-# ------------------------------------------------------
 
-def load_level(level_name):
+def load_level(level_name, folder):
     """Safely loads a level and returns (rows, cols, source_x, source_y, atlas)"""
-    file_path = pathlib.Path(__file__).parent / "levels" / f"{level_name}.txt"
+    file_path = pathlib.Path(__file__).parent / folder / f"{level_name}.txt"
     try:
         with open(file_path, "r") as file:
             lines = [line.strip() for line in file]
@@ -98,6 +108,7 @@ def load_level(level_name):
             
         return rows, cols, source_x, source_y, atlas
     except FileNotFoundError:
+        print(f"File not found: {file_path}")
         return None
 
 def draw_pipe(screen, w, h, atlas, visited, sx, sy):
@@ -140,18 +151,26 @@ def draw_pipe(screen, w, h, atlas, visited, sx, sy):
         y2 += 1
         y += h
 
-def level_grid(screen, x, y, w, h, rows, cols, saved_wins, show_timer, page):
+def level_grid(screen, x, y, w, h, rows, cols, saved_wins, show_timer, page, flag):
     font = pygame.font.SysFont(None, 100)
     timer_font = pygame.font.SysFont(None, 50) 
     
     cell_width = w // cols
     cell_height = h // rows
-    k = 1 + (page*16)
+    k = 1 + (page*rows*cols)
+    if flag == "custom":
+        level_list = sorted([f.stem for f in (pathlib.Path(__file__).parent / "custom_levels").iterdir() if f.is_file()])
     
     for i in range(rows):
         for j in range(cols):
             cell_rect = pygame.Rect(x + j * cell_width, y + i * cell_height, cell_width, cell_height)
-            level_name = f"level{k}"
+            if flag == "classic":
+                level_name = f"level{k}"
+            elif flag == "custom":
+                try:
+                    level_name = level_list[k-1]
+                except IndexError:
+                    level_name = None
             
             bg_color = BGCOLOR
             record_time = None
@@ -164,11 +183,21 @@ def level_grid(screen, x, y, w, h, rows, cols, saved_wins, show_timer, page):
 
             pygame.draw.rect(screen, bg_color, cell_rect)
             pygame.draw.rect(screen, TEXT_COLOR, cell_rect, 1)
-            
-            text_surf = font.render(str(k), True, TEXT_COLOR)
-            screen.blit(text_surf, (x + j * cell_width + cell_width//2 - text_surf.get_width()//2, 
-                                    y + i * cell_height + cell_height//2 - text_surf.get_height()//2))
-            
+            if flag == "classic":
+                text_surf = font.render(str(k), True, TEXT_COLOR)
+            elif flag == "custom" and level_name:
+                if len(level_name) > 4:
+                    font = pygame.font.SysFont(None, 400 // len(level_name))
+                else:
+                    font = pygame.font.SysFont(None, 100)
+                text_surf = font.render(level_name, True, TEXT_COLOR)
+            else:
+                text_surf = None
+
+            if text_surf:
+                screen.blit(text_surf, (x + j * cell_width + cell_width//2 - text_surf.get_width()//2, 
+                                        y + i * cell_height + cell_height//2 - text_surf.get_height()//2))
+
             if show_timer and record_time is not None:
                 total_seconds = record_time // 1000
                 minutes = total_seconds // 60
@@ -239,7 +268,7 @@ def check_win(atlas, visited):
                 return False
     return True
 
-def draw_check_box(screen, x, y, size, is_checked, text):
+def draw_check_box(screen, x, y, size, is_checked, text, click_detected):
     pygame.draw.rect(screen, TEXT_COLOR, (x, y, size, size), 4)
     font = pygame.font.SysFont(None, 50)
     text_surf = font.render(text, True, TEXT_COLOR)
@@ -247,10 +276,9 @@ def draw_check_box(screen, x, y, size, is_checked, text):
     mouse_pos = pygame.mouse.get_pos()
     if pygame.Rect(x, y, size, size).collidepoint(mouse_pos):
          pygame.draw.rect(screen, TEXT_COLOR, (x, y, size, size), 2)
-         if pygame.mouse.get_pressed()[0]:  # Left click
+         if click_detected:
              is_checked = not is_checked
              click_sound.play()
-             pygame.time.delay(100)
     if is_checked:
         pygame.draw.line(screen, GREEN, (x + 5, y + size//2), (x + size//2, y + size - 5), 8)
         pygame.draw.line(screen, GREEN, (x + size//2, y + size - 5), (x + size - 5, y + 5), 8)
@@ -258,7 +286,7 @@ def draw_check_box(screen, x, y, size, is_checked, text):
 
 def timer(screen, x, y, elapsed_time, show_timer):
     if not show_timer:
-        return elapsed_time
+        return None
     font = pygame.font.SysFont(None, 100)
     total_seconds = elapsed_time // 1000
     minutes = total_seconds // 60
@@ -269,7 +297,7 @@ def timer(screen, x, y, elapsed_time, show_timer):
     screen.blit(text_surf, (x, y))
     return time_string
 
-def pagebutton(screen, x, y, w, h, page, last_page):
+def pagebutton(screen, x, y, w, h, page, last_page, click_detected):
     text = ">"
     text2 = "<"
     button = False
@@ -292,26 +320,23 @@ def pagebutton(screen, x, y, w, h, page, last_page):
     mouse_pos = pygame.mouse.get_pos()
     if button_rect.collidepoint(mouse_pos) and button:
         pygame.draw.rect(screen, BLUE, button_rect, 4)
-        if pygame.mouse.get_pressed()[0]:
-            pygame.time.delay(100)
+        if click_detected:
             click_sound.play()
             return page+1
     elif button2_rect.collidepoint(mouse_pos) and button2:
         pygame.draw.rect(screen, BLUE, button2_rect, 4)
-        if pygame.mouse.get_pressed()[0]:
-            pygame.time.delay(100)
+        if click_detected:
             click_sound.play()
             return page-1
     return page
 
-def textured_button(screen, x, y, w, h, icon):
+def textured_button(screen, x, y, w, h, icon, click_detected):
     button_rect = pygame.Rect(x, y, w, h)
     screen.blit(icon, (x, y))
     mouse_pos = pygame.mouse.get_pos()
     if button_rect.collidepoint(mouse_pos):
         pygame.draw.rect(screen, BLUE, button_rect, 4)
-        if pygame.mouse.get_pressed()[0]:
-            pygame.time.delay(100)
+        if click_detected:
             click_sound.play()
             return True
     return False
@@ -323,21 +348,6 @@ def screenflags(wm_info):
     if wm_info.get("display_name", "").startswith("wayland") or "wayland" in wm_info.get("display_name", "").lower():
         return pygame.RESIZABLE | pygame.SCALED
     return pygame.RESIZABLE
-
-
-# ----------------- NEW DYNAMIC SETTINGS SYSTEM -----------------
-
-# 1. Just add new settings here! The UI and storage will adjust automatically.
-DEFAULT_SETTINGS = {
-    "Show Timer": True,
-    "Show Level Name": True,
-    "Dark Theme": True,
-    "Borderless Window": False,
-    "Mute Sound": False,
-    "Mute Music": True,
-    "2K Mode": False,
-  # "New Setting Example": False  <-- Try adding your next settings here!
-}
 
 def save_settings(settings_dict):
     settings_path = pathlib.Path(__file__).parent / "settings.txt"
@@ -362,13 +372,28 @@ def load_settings():
                     
     return current_settings
 
+def text_button(screen, x, y, w, h, text, click_detected):
+    font = pygame.font.SysFont(None, 50)
+    button_rect = pygame.Rect(x, y, w, h)
+    pygame.draw.rect(screen, TEXT_COLOR, button_rect, 2)
+    text_surf = font.render(text, True, TEXT_COLOR)
+    screen.blit(text_surf, (x + w//2 - text_surf.get_width()//2, y + h//2 - text_surf.get_height()//2))
+    
+    mouse_pos = pygame.mouse.get_pos()
+    if button_rect.collidepoint(mouse_pos):
+        pygame.draw.rect(screen, BLUE, button_rect, 4)
+        if click_detected:
+            click_sound.play()
+            return True
+    return False
+
 # Initialize Game
 screen_width, screen_height = 1200, 900
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 pygame.init()
 pygame.mixer.init()
 
-# Load images after pygame.init() so the display subsystem is ready
+# Asset Loading
 light_settings_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "settings_light.png")
 dark_settings_unscaled = pygame.image.load(pathlib.Path(__file__).parent / "assets" / "settings_dark.png")
 light_settings = pygame.transform.smoothscale(light_settings_unscaled, (75, 75))
@@ -398,8 +423,8 @@ music_folder = pathlib.Path(__file__).parent / "music"
 if music_folder.exists():
     music_list = [f.name for f in music_folder.iterdir() if f.is_file()]
 else:
-    print(f"Music folder not found: {music_folder}")
     music_list = []
+
 screen = pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info))
 pygame.display.set_caption("Pipes")
 clock = pygame.time.Clock()
@@ -408,11 +433,10 @@ rows, cols, source_x, source_y = 4, 4, 0, 0
 atlas = []
 current_level_name = "level1"
 
-res = load_level(current_level_name)
+res = load_level(current_level_name, "levels")
 if res:
     rows, cols, source_x, source_y, atlas = res
 
-# Load settings dict
 game_settings = load_settings()
 
 record = 0
@@ -420,7 +444,9 @@ start_ticks = 0
 time_string = "00:00.000"
 scene = "main_menu"
 page = 0
-last_page = 1
+last_page_classic = 1
+last_page_custom = 0
+win = False
 
 if game_settings["Borderless Window"]:
     screen_width, screen_height = pygame.display.get_desktop_sizes()[0]
@@ -433,21 +459,18 @@ running = True
 while running:
     screen.fill(BGCOLOR)
     click_detected = False
-    
     saved_wins, level_and_time = load_wins()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
         elif event.type == pygame.VIDEORESIZE:
             if not game_settings["Borderless Window"]:
                 new_w, new_h = event.size
-                # Пересоздаем окно ТОЛЬКО если размер РЕАЛЬНО изменился (а не просто спамится композитором)
-                if new_w != screen_width or new_h != screen_height:
-                    screen_width, screen_height = new_w, new_h
-                    screen = pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info) | pygame.DOUBLEBUF)
-
+                if scene != "level":
+                    if new_w != screen_width or new_h != screen_height:
+                        screen_width, screen_height = new_w, new_h
+                        screen = pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info) | pygame.DOUBLEBUF)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 if scene == "level":
@@ -455,30 +478,18 @@ while running:
                     if check_win(atlas, visited):
                         save_win(current_level_name, record)
                         record = 0
-                    scene = "selector"
+                    scene = level_origin
+                    # Restore window bounds cleanly when leaving layout grid scene
+                    if game_settings["Borderless Window"]:
+                        screen_width, screen_height = pygame.display.get_desktop_sizes()[0]
+                        pygame.display.set_mode((screen_width, screen_height), pygame.NOFRAME)
+                    else:
+                        screen_width, screen_height = 1200, 900
+                        pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info))
+                    WIDTH, HEIGHT = 900, 900
                     break
                 scene = "main_menu"
                 WIDTH, HEIGHT = 900, 900
-            elif event.key == pygame.K_x:
-                level = input("Enter level name: ")
-                res = load_level(level)
-                if res:
-                    current_level_name = level
-                    rows, cols, source_x, source_y, atlas = res
-                    scene = "level"
-                    pygame.display.quit()
-                    if rows > cols:
-                        HEIGHT = 900
-                        WIDTH = int(900 * cols / rows)
-                    elif cols > rows:
-                        WIDTH = 900
-                        HEIGHT = int(900 * rows / cols)
-                    else:
-                        WIDTH, HEIGHT = 900, 900
-                    icon_path_cl = pathlib.Path(__file__).parent / "assets" / "iconlm.png"
-                    pygame.display.set_caption("Pipes - Custom Level")
-                    pygame.display.set_icon(pygame.image.load(icon_path_cl))
-                    screen = pygame.display.set_mode((WIDTH, HEIGHT), screenflags(wm_info))
             elif event.key == pygame.K_F11:
                 game_settings["Borderless Window"] = not game_settings["Borderless Window"]
                 if game_settings["Borderless Window"]:
@@ -488,10 +499,10 @@ while running:
                     screen_width, screen_height = 1200, 900
                     pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info))
                 save_settings(game_settings)
-
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             click_detected = True
 
+    # SCENE LEVEL LOGIC
     if scene == "level":
         draw_frame(screen, (screen_width - WIDTH)//2 - 4, (screen_height - HEIGHT)//2 - 4, WIDTH + 8, HEIGHT + 8)
         i, j, cell_rect = get_hovered_cell((screen_width - WIDTH)//2, (screen_height - HEIGHT)//2, WIDTH, HEIGHT, rows, cols)
@@ -510,7 +521,7 @@ while running:
             text = font.render("You win!", True, TEXT_COLOR)
             screen.blit(text, (screen_width // 2 - text.get_width() // 2, screen_height // 2 - text.get_height() * 3))
             if game_settings["Show Timer"]:
-                if time_string == None:
+                if time_string is None:
                     time_string = "00:00.000"
                 text = font.render(time_string, True, TEXT_COLOR)
                 screen.blit(text, (screen_width // 2 - text.get_width() // 2, screen_height // 2 - text.get_height()))
@@ -522,49 +533,55 @@ while running:
                 level_text = font.render(current_level_name, True, TEXT_COLOR)
                 screen.blit(level_text, (screen_width // 2 - level_text.get_width() // 2, 25))
 
-    elif scene == "selector":
+    # SCENE CLASSIC LEVEL SELECTOR
+    elif scene == "classic_level_selector":
         font = pygame.font.SysFont(None, 100)
         text = font.render("Choose level", True, TEXT_COLOR)
         screen.blit(text, (screen_width // 2 - text.get_width() // 2, (screen_height - HEIGHT)//2 + 25))
-        page = pagebutton(screen, screen_width//2, (screen_height - HEIGHT)//2 + HEIGHT - 75, 50, 50, page, last_page)
-        if textured_button(screen, 25,25, 75, 75, back_icon):
-            scene = "main_menu"
+        page = pagebutton(screen, screen_width//2, (screen_height - HEIGHT)//2 + HEIGHT - 75, 50, 50, page, last_page_classic, click_detected)
+        if textured_button(screen, 25, 25, 75, 75, back_icon, click_detected):
+            scene = "mode_selector"
         
-        level_grid(screen, (screen_width - WIDTH)//2 + 100, (screen_height - HEIGHT)//2 + 100, WIDTH-200, HEIGHT-200, 4, 4, level_and_time, game_settings["Show Timer"], page)
+        level_grid(screen, (screen_width - WIDTH)//2 + 100, (screen_height - HEIGHT)//2 + 100, WIDTH-200, HEIGHT-200, 4, 4, level_and_time, game_settings["Show Timer"], page, "classic")
         i, j, cell_rect = get_hovered_cell((screen_width - WIDTH)//2 + 100, (screen_height - HEIGHT)//2 + 100, WIDTH-200, HEIGHT-200, 4, 4)
         
         if i is not None and j is not None:
             pygame.draw.rect(screen, BLUE, cell_rect, 4)
             if click_detected:
+                level_origin = "classic_level_selector"
                 click_sound.play()
                 level_num = i * 4 + j + 1 + page*16
                 level_str = f"level{level_num}"
-                res = load_level(level_str)
+                res = load_level(level_str, "levels")
                 if res:
                     current_level_name = level_str
                     rows, cols, source_x, source_y, atlas = res
                     scene = "level"
+                    win = False
+                    
+                    # Correct dynamic pipe frame scaling on classic puzzle entries
+                    if rows > cols:
+                        HEIGHT = 900
+                        WIDTH = int(900 * cols / rows)
+                    elif cols > rows:
+                        WIDTH = 900
+                        HEIGHT = int(900 * rows / cols)
+                    else:
+                        WIDTH, HEIGHT = 900, 900
+                    screen = pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info))
                     start_ticks = pygame.time.get_ticks()
                     
+    # SCENE SETTINGS LOGIC
     elif scene == "settings":
         font = pygame.font.SysFont(None, 100)
         text = font.render("Settings", True, TEXT_COLOR)
         screen.blit(text, (screen_width // 2 - text.get_width() // 2, (screen_height - HEIGHT)//2 + 25))
         
-        # --- DYNAMIC CHECKBOX LAYOUT GENERATION ---
         start_y = (screen_height - HEIGHT)//2 + 150
         spacing = 100
         for idx, setting_name in enumerate(game_settings.keys()):
             current_y = start_y + (idx * spacing)
-            game_settings[setting_name] = draw_check_box(
-                screen, 
-                screen_width//2 - 200, 
-                current_y, 
-                50, 
-            game_settings[setting_name], 
-            setting_name
-            )
-        # ------------------------------------------
+            game_settings[setting_name] = draw_check_box(screen, screen_width//2 - 200, current_y, 50, game_settings[setting_name], setting_name, click_detected)
 
         if game_settings["Dark Theme"]:
             BGCOLOR = (30,30,30)
@@ -584,6 +601,7 @@ while running:
             x_icon = light_x
             play_icon = light_play
             back_icon = light_backarrow
+
         if game_settings["Mute Sound"]:
             click_sound.set_volume(0)
             whoosh_sound.set_volume(0)
@@ -591,7 +609,7 @@ while running:
             click_sound.set_volume(0.2)
             whoosh_sound.set_volume(0.2)
             
-        if textured_button(screen, 25,25, 75, 75, back_icon):
+        if textured_button(screen, 25, 25, 75, 75, back_icon, click_detected):
             if game_settings["Borderless Window"]:
                 screen_width, screen_height = pygame.display.get_desktop_sizes()[0]
                 pygame.display.set_mode((screen_width, screen_height), pygame.NOFRAME)
@@ -604,6 +622,8 @@ while running:
                 WIDTH, HEIGHT = 900, 900
             save_settings(game_settings)
             scene = "main_menu"
+    
+    # SCENE MAIN MENU LOGIC
     elif scene == "main_menu":
         screen.blit(logo, (screen_width // 2 - logo.get_width() // 2, 50))
         if game_settings["Dark Theme"]:
@@ -624,12 +644,68 @@ while running:
             x_icon = light_x
             play_icon = light_play
             back_icon = light_backarrow
-        if textured_button(screen, screen_width//2 - play_icon.get_width()//2, screen_height//2 - play_icon.get_height()//2, 200, 200, play_icon):
-            scene = "selector"
-        if textured_button(screen, screen_width//2 - settings_icon.get_width()//2 - 200, screen_height//2 - settings_icon.get_height()//2, 75,75, settings_icon):
+            
+        if textured_button(screen, screen_width//2 - play_icon.get_width()//2, screen_height//2 - play_icon.get_height()//2, 200, 200, play_icon, click_detected):
+            scene = "mode_selector"
+        if textured_button(screen, screen_width//2 - settings_icon.get_width()//2 - 200, screen_height//2 - settings_icon.get_height()//2, 75, 75, settings_icon, click_detected):
             scene = "settings"
-        if textured_button(screen, screen_width//2 - x_icon.get_width()//2 + 200, screen_height//2 - x_icon.get_height()//2, 75,75, x_icon):
+        if textured_button(screen, screen_width//2 - x_icon.get_width()//2 + 200, screen_height//2 - x_icon.get_height()//2, 75, 75, x_icon, click_detected):
             running = False
+    
+    # SCENE MODE SELECTOR LOGIC
+    elif scene == "mode_selector":
+        font = pygame.font.SysFont(None, 100)
+        text = font.render("Choose Mode", True, TEXT_COLOR)
+        screen.blit(text, (screen_width // 2 - text.get_width() // 2, (screen_height - HEIGHT)//2 + 25))
+        
+        if textured_button(screen, 25, 25, 75, 75, back_icon, click_detected):
+            scene = "main_menu"
+        if text_button(screen, screen_width//2 - 100, screen_height//2 - 250, 200, 100, "Classic", click_detected):
+            scene = "classic_level_selector"
+        if text_button(screen, screen_width//2 - 100, screen_height//2 - 100, 200, 100, "Custom", click_detected):
+            scene = "custom_level_selector"
+
+    # SCENE CUSTOM LEVEL SELECTOR LOGIC
+    elif scene == "custom_level_selector":
+        font = pygame.font.SysFont(None, 100)
+        text = font.render("Custom Levels", True, TEXT_COLOR)
+        screen.blit(text, (screen_width // 2 - text.get_width() // 2, (screen_height - HEIGHT)//2 + 25))
+        
+        if textured_button(screen, 25, 25, 75, 75, back_icon, click_detected):
+            scene = "mode_selector"
+        level_grid(screen, (screen_width - WIDTH)//2 + 100, (screen_height - HEIGHT)//2 + 100, WIDTH-200, HEIGHT-200, 4, 4, level_and_time, game_settings["Show Timer"], page, "custom")
+        i, j, cell_rect = get_hovered_cell((screen_width - WIDTH)//2 + 100, (screen_height - HEIGHT)//2 + 100, WIDTH-200, HEIGHT-200, 4, 4)
+        
+        if i is not None and j is not None:
+            pygame.draw.rect(screen, BLUE, cell_rect, 4)
+            if click_detected:
+                level_origin = "custom_level_selector"
+                click_sound.play()
+                level_list = sorted([f.stem for f in (pathlib.Path(__file__).parent / "custom_levels").iterdir() if f.is_file()])
+                try:
+                    level_str = level_list[i*4 + j + page*16]
+                    res = load_level(level_str, "custom_levels")
+                    if res:
+                        current_level_name = level_str
+                        rows, cols, source_x, source_y, atlas = res
+                        scene = "level"
+                        win = False
+                        if rows > cols:
+                            HEIGHT = 900
+                            WIDTH = int(900 * cols / rows)
+                        elif cols > rows:
+                            WIDTH = 900
+                            HEIGHT = int(900 * rows / cols)
+                        else:
+                            WIDTH, HEIGHT = 900, 900
+                        screen = pygame.display.set_mode((screen_width, screen_height), screenflags(wm_info))
+                        start_ticks = pygame.time.get_ticks()
+                except IndexError:
+                    pass
+        last_page_custom = (len(sorted([f.stem for f in (pathlib.Path(__file__).parent / "custom_levels").iterdir() if f.is_file()])) - 1) // 16
+        page = pagebutton(screen, screen_width//2, (screen_height - HEIGHT)//2 + HEIGHT - 75, 50, 50, page, last_page_custom, click_detected)
+
+    # Music background processor
     if not pygame.mixer.music.get_busy() and not game_settings["Mute Music"] and music_list:
         next_music = random.choice(music_list)
         pygame.mixer.music.load(str(music_folder / next_music))
@@ -637,6 +713,7 @@ while running:
         pygame.mixer.music.set_volume(0.1)
     elif game_settings["Mute Music"]:
         pygame.mixer.music.stop()
+
     clock.tick(60)
     pygame.display.update()
 
